@@ -27,7 +27,7 @@ var ACCELEROMETERDATA_CHARACTERISTIC_UUID   = 'e95dca4b-251d-470a-a062-fa1922dfa
 function connect() {
   navigator.bluetooth.requestDevice({
     filters: [{
-      namePrefix: 'BBC micro:bit',
+      namePrefix: 'BBC micro:bit'
     }],
     optionalServices: [ACCELEROMETERSERVICE_SERVICE_UUID]
   })
