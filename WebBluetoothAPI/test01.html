@@ -2,76 +2,83 @@
 <html>
 <head>
 <meta charset="utf-8" />
-<title>Web Bluetooth API のテスト</title>
+<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+<title></title>
 </head>
 
 <body>
-<button id="connect">接続</button>
-<button id="disconnect">切断</button>
-<input id="message" value="hello" />
-<button id="send">送信</button>
+<form name="js">
+<input type="button" value="接続" onclick="connect();"/> 
+<input type="button" value="切断" onclick="disconnect();" /> 
+<input type="text" name="x" value="" />
+<input type="text" name="y" value="" />
+<input type="text" name="z" value="" />
+</form>
 
-<script src="//cdnjs.cloudflare.com/ajax/libs/d3/4.3.0/d3.min.js"></script>
 <script>
-// 情報元： https://shimz.me/blog/microbit/5456
-var bluetoothDevice;
-var characteristic;
+var accelerometer_device;
+var accelerometer_characteristic;
+
 //micro:bit BLE UUID
-var LED_SERVICE_UUID                        = 'e95dd91d-251d-470a-a062-fa1922dfa9a8';
-var LED_TEXT_CHARACTERISTIC_UUID            = 'e95d93ee-251d-470a-a062-fa1922dfa9a8';
+var ACCELEROMETERSERVICE_SERVICE_UUID       = 'e95d0753-251d-470a-a062-fa1922dfa9a8';
+var ACCELEROMETERDATA_CHARACTERISTIC_UUID   = 'e95dca4b-251d-470a-a062-fa1922dfa9a8';
 
-//ボタンイベントリスナー
-d3.select("#connect").on("click", connect);
-d3.select("#disconnect").on("click", disconnect);
-d3.select("#send").on("click", sendMessage);
 
-//micro:bitに接続する
 function connect() {
-  let options = {};
-
-  //options.acceptAllDevices = true;
-  filters: [{
-    namePrefix: 'BBC micro:bit',
-  }],
-
-  navigator.bluetooth.requestDevice(options)
+  navigator.bluetooth.requestDevice({
+    filters: [{
+      namePrefix: 'BBC micro:bit',
+    }],
+    optionalServices: [ACCELEROMETERSERVICE_SERVICE_UUID]
+  })
   .then(device => {
-    bluetoothDevice = device;
+    accelerometer_device = device;
     console.log("device", device);
     return device.gatt.connect();
   })
+  //ACCELEROMETER
   .then(server =>{
     console.log("server", server)
-    return server.getPrimaryService(LED_SERVICE_UUID);
+    return server.getPrimaryService(ACCELEROMETERSERVICE_SERVICE_UUID);
   })
   .then(service => {
     console.log("service", service)
-    return service.getCharacteristic(LED_TEXT_CHARACTERISTIC_UUID)
+    return service.getCharacteristic(ACCELEROMETERDATA_CHARACTERISTIC_UUID)
   })
   .then(chara => {
-    console.log("characteristic", chara)
+    console.log("ACCELEROMETER:", chara)
     alert("BLE接続が完了しました。");
     characteristic = chara;
-  })
+    characteristic.startNotifications();
+    characteristic.addEventListener('characteristicvaluechanged',onAccelerometerValueChanged);  
+  })  
   .catch(error => {
+    alert("BLE接続に失敗しました。もう一度試してみてください");
     console.log(error);
-  });
+  });    
 }
 
-//LEDに表示するメッセージを送信
-function sendMessage() {
-  if (!bluetoothDevice || !bluetoothDevice.gatt.connected || !characteristic) return ;
-  var text = document.querySelector("#message").value;
-  var arrayBuffe = new TextEncoder().encode(text);
-  characteristic.writeValue(arrayBuffe);
-}
+function onAccelerometerValueChanged(event) {
+    AcceleratorX = event.target.value.getUint16(0)/1000.0;
+    console.log('x:' + AcceleratorX);
+    document.js.x.value = AcceleratorX;
 
-//BLE切断処理
+    AcceleratorY = event.target.value.getUint16(2)/1000.0;
+    console.log('y:' + AcceleratorY);
+    document.js.y.value = AcceleratorY;
+
+    AcceleratorZ = event.target.value.getUint16(4)/1000.0;
+    console.log('z:' + AcceleratorZ);
+    document.js.z.value = AcceleratorZ;
+
+} 
+
 function disconnect() {
-  if (!bluetoothDevice || !bluetoothDevice.gatt.connected) return ;
-  bluetoothDevice.gatt.disconnect();
+  if (!accelerometer_device || !accelerometer_device.gatt.connected) return ;
+  accelerometer_device.gatt.disconnect();
   alert("BLE接続を切断しました。")
 }
-</script>
+
+</script>    
 </body>
 </html>
