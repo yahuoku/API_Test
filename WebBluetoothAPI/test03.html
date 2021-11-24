@@ -1,0 +1,50 @@
+<meta charset="UTF-8">
+<title>Micro:bit UART 通信</title>
+<style type="text/css">
+* {
+    font-size: 3vmin;
+    padding: 3vmin;
+}
+body {
+    text-align: center;
+}
+</style>
+<h1>Micro:bit UART 通信</h1>
+<form>
+  <button type="button" id="connect">接続</button>
+</form>
+
+<script>
+const UUID_UART_SERVICE = '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
+
+let gatt = null
+
+const update = connected => {
+    document.getElementById('connect').textContent = connected ? '切断' : '接続'
+}
+
+document.getElementById('connect').addEventListener('click', e => {
+    if(!(navigator.bluetooth && navigator.bluetooth.requestDevice)) {
+        alert('WebBluetooth に未対応のブラウザです。')
+        return
+    }
+    if (document.getElementById('connect').textContent == '接続') {
+        navigator.bluetooth.requestDevice({
+            filters: [
+                { services: [UUID_UART_SERVICE] },
+                { namePrefix: 'BBC micro:bit' }
+            ]
+        }).then(device => {
+            gatt = device.gatt
+            return gatt.connect()
+        }).then(server => {
+            update(true)
+        }).catch(function(err) {
+            alert(err)
+        })
+    } else {
+        gatt.disconnect()
+        update(false)
+    }
+})
+</script>
